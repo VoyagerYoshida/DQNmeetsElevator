@@ -1,0 +1,32 @@
+
+<!-- saved from url=(0056)https://s3-us-west-2.amazonaws.com/dqn/lifts/viewer.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <link rel="stylesheet" href="./viewer_files/jquery-ui.css">
+    <script src="./viewer_files/jquery-1.12.4.js"></script>
+    <script src="./viewer_files/jquery-ui.js"></script>
+  </head>
+<body>
+
+  <form id="jsonFile" name="jsonFile" enctype="multipart/form-data" method="post">
+    <fieldset>
+      <input type="file" id="fileinput">
+      <input type="button" value="Load from file" onclick="load_file();">
+    </fieldset>
+  </form>
+
+  <div>
+    <input type="button" value="Start/stop" onclick="start_animation();">
+    Tick=<span id="tick"></span>, Reward=<span id="reward"></span>, #People=<span id="npeople"></span>, Avg. reward=<span id="avgreward"></span></div>
+  <div id="slider" class="ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"><span tabindex="0" class="ui-slider-handle ui-corner-all ui-state-default" style="left: 100%;"></span></div>
+
+  <canvas id="canvas" width="750" height="800">
+    Canvas not supported
+  </canvas>
+  <div id="debug"></div>
+
+<script type="text/javascript" src="./viewer_files/viewer.js"></script>
+
+
+
+</body></html>
