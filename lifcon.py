@@ -9,20 +9,12 @@ STATE_GOING_UP = "up"
 STATE_GOING_DOWN = "down"
 STATE_EMPTY = "both"
 
-ControllerStatus = namedtuple("ControllerStatus",
-                              ["wait_up", "wait_down",
-                               "locations", "members",
-                               "status"])
+ControllerStatus = namedtuple("ControllerStatus", ["wait_up", "wait_down", "locations", "members", "status"])
+Person = namedtuple("Person", ["dest_floor", "spawn_floor", "spawn_tick"])
 
-Person = namedtuple("Person",
-                    ["dest_floor", "spawn_floor", "spawn_tick"])
 
 def make_person_from_jsval(v):
-    return Person(
-        dest_floor=int(v['df']),
-        spawn_floor=int(v['sf']),
-        spawn_tick=int(v['st']))
-
+    return Person(dest_floor=int(v['df']), spawn_floor=int(v['sf']), spawn_tick=int(v['st']))
 
 
 class World:
@@ -51,7 +43,6 @@ class World:
             for t in range(beg, end):
                 self.destination_types[t] = spawn_conf['destination_type']
 
-
     def spawn_people(self, tick):
         people = np.random.poisson(self.spawn_lambdas[tick])
 
@@ -66,11 +57,13 @@ class World:
                 ret[i].append(Person(dest_floor=d, spawn_floor=i, spawn_tick=tick))
         return ret
 
+
 def next_int(fr):
     if fr.denominator == 1:
         return fr.numerator + 1
     else:
         return math.ceil(fr)
+
 
 def prev_int(fr):
     if fr.denominator == 1:

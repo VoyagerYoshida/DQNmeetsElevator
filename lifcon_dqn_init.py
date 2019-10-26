@@ -1,17 +1,17 @@
 import yaml
 import argparse
 import numpy as np
-from lifcon import World
-from lifcon_dqn import LiftControllerDQN
+
 import mxnet as mx
 
+from lifcon import World
+from lifcon_dqn import LiftControllerDQN
+
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--world', type=str,
-                    help='world configuration')
-parser.add_argument('--saveparam', type=str, default=None,
-                    help='Write DQN parameter')
-parser.add_argument('--seed', type=int, default=0,
-                    help='seed')
+parser.add_argument('--world', type=str, help='world configuration')
+parser.add_argument('--saveparam', type=str, default=None, help='Write DQN parameter')
+parser.add_argument('--seed', type=int, default=0, help='seed')
 
 opt = parser.parse_args()
 

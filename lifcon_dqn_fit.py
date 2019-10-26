@@ -1,47 +1,36 @@
 import yaml
 import argparse
 import numpy as np
-from lifcon import World, make_person_from_jsval, ControllerStatus, Wait, Move
-from lifcon_dqn import LiftControllerDQN
 import gzip
 import logging
 import json
 from fractions import Fraction
+import itertools
 
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn
 from mxnet import autograd
-import itertools
+
+from lifcon import World, make_person_from_jsval, ControllerStatus, Wait, Move
+from lifcon_dqn import LiftControllerDQN
+
 
 logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--world', type=str,
-                    help='world configuration')
-parser.add_argument('--replay', type=str, default=None,
-                    help='Read replay file')
-parser.add_argument('--replaylist', type=str, default=None,
-                    help='Read replay file')
-parser.add_argument('--loadparam', type=str, default=None,
-                    help='Read DQN parameter')
-parser.add_argument('--saveparam', type=str, default=None,
-                    help='Write DQN parameter')
-parser.add_argument('--seed', type=int, default=0,
-                    help='seed')
-parser.add_argument('--batchsize', type=int, default=128,
-                    help='batchsize')
-parser.add_argument('--gamma', type=float, default=0.9,
-                    help='gamma')
-parser.add_argument('--lr', type=float, default=0.0002,
-                    help='lr')
-parser.add_argument('--tolerance', type=float, default=0.05,
-                    help='tolerance')
-parser.add_argument('--maxnepoch', type=int, default=10,
-                    help='nepoch')
-parser.add_argument('--double-dqn', action='store_true',
-                    default=False, help='Use double DQN')
-
+parser.add_argument('--world', type=str, help='world configuration')
+parser.add_argument('--replay', type=str, default=None, help='Read replay file')
+parser.add_argument('--replaylist', type=str, default=None, help='Read replay file')
+parser.add_argument('--loadparam', type=str, default=None, help='Read DQN parameter')
+parser.add_argument('--saveparam', type=str, default=None, help='Write DQN parameter')
+parser.add_argument('--seed', type=int, default=0, help='seed')
+parser.add_argument('--batchsize', type=int, default=128, help='batchsize')
+parser.add_argument('--gamma', type=float, default=0.9, help='gamma')
+parser.add_argument('--lr', type=float, default=0.0002, help='lr')
+parser.add_argument('--tolerance', type=float, default=0.05, help='tolerance')
+parser.add_argument('--maxnepoch', type=int, default=10, help='nepoch')
+parser.add_argument('--double-dqn', action='store_true', default=False, help='Use double DQN')
 
 opt = parser.parse_args()
 
@@ -77,9 +66,10 @@ for replayfile in replayfiles:
 
 logging.info("#Ticks=%d", len(replay) - 1)
 
-all_idxs = list(range(len(replay)-1))
+all_idxs = list(range(len(replay) - 1))
 
 loss = gluon.loss.L2Loss()
+
 
 def status_from_jsval(jv):
     return ControllerStatus(
@@ -91,10 +81,10 @@ def status_from_jsval(jv):
         status=jv['statuses']
     )
 
+
 metric = mx.metric.MAE()
 
-trainer = gluon.Trainer(dqn.collect_params(),
-                        'adam', {'learning_rate': opt.lr})
+trainer = gluon.Trainer(dqn.collect_params(), 'adam', {'learning_rate': opt.lr})
 
 batchnum = 0
 nepoch = 0
@@ -138,8 +128,7 @@ while True:
                 else:
                     goals.append(Move(dest=int(v)))
 
-            cur_Asel[i, :, :] = dqn.make_action_selector(cur_stat,
-                                                         goals, cur['acceptst'])
+            cur_Asel[i, :, :] = dqn.make_action_selector(cur_stat, goals, cur['acceptst'])
 
             if nxt is None:
                 continue
@@ -154,7 +143,6 @@ while True:
 
             # rewards in replay are computed before making an action
             rewards[i, 0] = sum(nxt['rewards']) + aux_reward
-
 
         cur_side = mx.nd.array(cur_side)
         cur_Asel = mx.nd.array(cur_Asel)
@@ -172,17 +160,17 @@ while True:
             cur = replay[idx]
             nxt = replay[idx + 1]
             if cur is None or nxt is None:
-                continue # nxt_Asel stays at zero, thus Q values will be zero
+                continue  # nxt_Asel stays at zero, thus Q values will be zero
 
             nxt_stat = status_from_jsval(nxt)
 
             if opt.double_dqn:
-                goals, flags = dqn.make_action(nxt_Q_from_cur.asnumpy()[i, :, :],
-                                               nxt_stat, 0)
+                goals, flags = dqn.make_action(nxt_Q_from_cur.asnumpy()[i, :, :], nxt_stat, 0)
             else:
-                goals, flags = dqn.make_action(nxt_Q.asnumpy()[i, :, :],
-                                               nxt_stat, 0)
+                goals, flags = dqn.make_action(nxt_Q.asnumpy()[i, :, :], nxt_stat, 0)
+
             nxt_Asel[i, :] = dqn.make_action_selector(nxt_stat, goals, flags)
+
         nxt_Asel = mx.nd.array(nxt_Asel)
 
         target = rewards + opt.gamma * mx.nd.sum(nxt_Q * nxt_Asel, axis=2).reshape((opt.batchsize, dqn.nlifts))
@@ -194,7 +182,7 @@ while True:
             err = loss(qa_s, target)
 
             err.backward()
-            metric.update([target,], [qa_s,])
+            metric.update([target, ], [qa_s, ])
 
         _, mae = metric.get()
         logging.info('[%07d] MAE = %f' % (batchnum, mae))
@@ -208,6 +196,7 @@ while True:
     _, mae = metric.get()
     if mae < opt.tolerance:
         break
+
     nepoch += 1
 
     if nepoch >= opt.maxnepoch:

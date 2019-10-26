@@ -8,30 +8,19 @@ import json
 import gzip
 import logging
 
-from lifcon import (
-    Move, Wait, ControllerStatus, Person, World,
-    STATE_GOING_UP, STATE_GOING_DOWN, STATE_EMPTY)
+from lifcon import Move, Wait, ControllerStatus, Person, World, STATE_GOING_UP, STATE_GOING_DOWN, STATE_EMPTY
 
 logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--world', type=str,
-                    help='world configuration')
-parser.add_argument('--replay', type=str, default="/dev/null",
-                    help='replay file (gziped json)')
-parser.add_argument('--dqnparam', type=str, default=None,
-                    help='Read DQN parameter, and use DQN')
-parser.add_argument('--epsilon', type=float, default=0.0,
-                    help='Epsilon value used for DQN eps-greedy')
-parser.add_argument('--starttick', type=int, default=0,
-                    help='Start tick')
-parser.add_argument('--limittick', type=int, default=None,
-                    help='Limit the number of ticks for debugging purposes')
-parser.add_argument('--seed', type=int, default=0,
-                    help='seed')
-parser.add_argument('--random-ticks', type=int, default=None,
-                    help='Limit the number of ticks for debugging purposes')
-
+parser.add_argument('--world', type=str, help='world configuration')
+parser.add_argument('--replay', type=str, default="/dev/null", help='replay file (gziped json)')
+parser.add_argument('--dqnparam', type=str, default=None, help='Read DQN parameter, and use DQN')
+parser.add_argument('--epsilon', type=float, default=0.0, help='Epsilon value used for DQN eps-greedy')
+parser.add_argument('--starttick', type=int, default=0, help='Start tick')
+parser.add_argument('--limittick', type=int, default=None, help='Limit the number of ticks for debugging purposes')
+parser.add_argument('--seed', type=int, default=0, help='seed')
+parser.add_argument('--random-ticks', type=int, default=None, help='Limit the number of ticks for debugging purposes')
 
 opt = parser.parse_args()
 np.random.seed(opt.seed)
@@ -45,12 +34,14 @@ def action_to_jsval(a):
     else:
         raise ValueError("Unknown action type")
 
+
 def person_to_jsval(p):
     return {
         "sf": float(p.spawn_floor),
         "st": float(p.spawn_tick),
         "df": float(p.dest_floor)
     }
+
 
 class CustomEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -84,6 +75,7 @@ class RuleBasedController:
                             highf = fid
                         if lowf is None or fid < lowf:
                             lowf = fid
+
                 dest = lowf if lid % 2 == 0 else highf
                 if dest == None:
                     goals.append(Wait())
@@ -93,17 +85,19 @@ class RuleBasedController:
                 _, dest = min((abs(loc - p.dest_floor), p.dest_floor)
                               for p in status.members[lid])
                 # find stop-by
-                if dest > loc: # Going-up
+                if dest > loc:  # Going-up
                     ceil_loc = math.ceil(loc)
                     for fid, flag in list(enumerate(status.wait_up))[ceil_loc:dest]:
                         if flag:
                             dest = fid
-                else: # Going-down
+                else:  # Going-down
                     floor_loc = math.floor(loc)
                     for fid, flag in list(enumerate(status.wait_down))[dest + 1:floor_loc:-1]:
                         if flag:
                             dest = fid
+
                 goals.append(Move(dest))
+
         return goals, [True for _ in range(self.nlifts)]
 
 
@@ -119,7 +113,7 @@ class Simulator:
 
         self.replayout = replayout
 
-        self.reset() # Initialize state variables
+        self.reset()  # Initialize state variables
 
     def reset(self):
         self.time = 0
@@ -140,8 +134,7 @@ class Simulator:
         self.people_in_lift = [[] for _ in range(self.nlifts)]
 
     def reset_random_locations(self):
-        self.locations = [Fraction(np.random.randint(0, self.nfloors))
-                          for _ in range(self.nlifts)]
+        self.locations = [Fraction(np.random.randint(0, self.nfloors)) for _ in range(self.nlifts)]
 
     def _write_replay_json(self, s):
         if isinstance(s, str):
@@ -165,7 +158,6 @@ class Simulator:
             else:
                 return STATE_GOING_DOWN
 
-
     def ticks(self, starttick, nticks):
         current_reward = 0.0
         num_spawned = 0
@@ -173,8 +165,7 @@ class Simulator:
         self._write_replay_json("[")
 
         lasttick = min(self.world.ticks_per_day, starttick + nticks)
-        logging.info("Start-tick=%07d, last-tick=%07d (nticks=%07d)",
-                     starttick, lasttick, nticks)
+        logging.info("Start-tick=%07d, last-tick=%07d (nticks=%07d)", starttick, lasttick, nticks)
 
         for tick in range(starttick, lasttick):
             if tick != starttick:
@@ -182,8 +173,7 @@ class Simulator:
 
             tickinfo = {'tick': tick}
 
-            # Spawn people
-            incoming = world.spawn_people(tick)
+            incoming = world.spawn_people(tick)  # Spawn people
 
             for fid, l in enumerate(incoming):
                 if len(l) == 0:
@@ -214,9 +204,7 @@ class Simulator:
 
                 # Make a stop
                 self.stop_time[lid] = self.world.lift_stop_duration
-                self.people_in_lift[lid] = list(filter(
-                    lambda p: p.dest_floor != loc,
-                    self.people_in_lift[lid]))
+                self.people_in_lift[lid] = list(filter(lambda p: p.dest_floor != loc, self.people_in_lift[lid]))
 
                 # Compute transition speeds and rewards
                 for p in exit_people:
@@ -245,35 +233,32 @@ class Simulator:
 
                 loc = self.locations[lid].numerator
 
-                if (len(self.waiting_up[loc]) == 0 and
-                    len(self.waiting_down[loc]) == 0):
-                    continue # Nobody's waiting
+                if len(self.waiting_up[loc]) == 0 and len(self.waiting_down[loc]) == 0:
+                    continue  # Nobody's waiting
 
                 movdir = self.move_state[lid]
                 if movdir == STATE_EMPTY:
-                    movdir = self._decide_move_direction(self.waiting_up[loc],
-                                                         self.waiting_down[loc])
+                    movdir = self._decide_move_direction(self.waiting_up[loc], self.waiting_down[loc])
 
                 vacancy = self.max_people_per_lift - len(self.people_in_lift[lid])
 
-                is_waiting = (len(self.waiting_up[loc]) > 0
-                              if movdir == STATE_GOING_UP else
-                              len(self.waiting_down[loc]) > 0)
+                is_waiting = (len(self.waiting_up[loc]) > 0 if movdir == STATE_GOING_UP
+                              else len(self.waiting_down[loc]) > 0)
 
                 if is_waiting and self.accept_state[lid]:
                     # Make a stop
-                    if vacancy > 0: # if empty
+                    if vacancy > 0:  # if empty
                         self.stop_time[lid] = self.world.lift_stop_duration
-                    #elif self.stop_time[lid] == 0:
-                    #    # Even if the lift is full, at least it opens the door
-                    #    # for reality
-                    #    self.stop_time[lid] = self.world.lift_stop_duration
+                    # elif self.stop_time[lid] == 0:
+                    #     # Even if the lift is full, at least it opens the door
+                    #     # for reality
+                    #     self.stop_time[lid] = self.world.lift_stop_duration
                 if self.stop_time[lid] >= 0 and is_waiting:
-                    if movdir == STATE_GOING_UP: # Move upward people in
+                    if movdir == STATE_GOING_UP:  # Move upward people in
                         mov = min(vacancy, len(self.waiting_up[loc]))
                         self.people_in_lift[lid] += self.waiting_up[loc][:mov]
                         self.waiting_up[loc] = self.waiting_up[loc][mov:]
-                    else: # Move downward people in
+                    else:  # Move downward people in
                         mov = min(vacancy, len(self.waiting_down[loc]))
                         self.people_in_lift[lid] += self.waiting_down[loc][:mov]
                         self.waiting_down[loc] = self.waiting_down[loc][mov:]
@@ -282,24 +267,22 @@ class Simulator:
                     if mov > 0:
                         self.move_state[lid] = movdir
 
-
             tickinfo['wait_dn'] = [len(l) for l in self.waiting_down]
             tickinfo['wait_up'] = [len(l) for l in self.waiting_up]
             tickinfo['stop_time'] = self.stop_time
             tickinfo['statuses'] = self.move_state
 
             tickinfo['locations'] = self.locations
-            tickinfo['inlift_p'] = [[person_to_jsval(p) for p in l]
-                                    for l in self.people_in_lift]
+            tickinfo['inlift_p'] = [[person_to_jsval(p) for p in l] for l in self.people_in_lift]
 
             # Make action
-            goals, acceptst = self.controller.tick(
-                ControllerStatus([len(l) != 0 for l in self.waiting_up],
-                                 [len(l) != 0 for l in self.waiting_down],
-                                 self.locations,
-                                 self.people_in_lift,
-                                 self.move_state),
-                tick)
+            goals, acceptst = self.controller.tick(ControllerStatus([len(l) != 0 for l in self.waiting_up],
+                                                                    [len(l) != 0 for l in self.waiting_down],
+                                                                    self.locations,
+                                                                    self.people_in_lift,
+                                                                    self.move_state),
+                                                   tick)
+
             tickinfo['goals'] = [action_to_jsval(a) for a in goals]
             tickinfo['acceptst'] = acceptst
 
@@ -326,12 +309,12 @@ class Simulator:
                         elif self.locations[lid] < goals[lid].dest:
                             self.locations[lid] += self.lift_speed
 
-            self._write_replay_json(json.dumps(tickinfo, cls=CustomEncoder,
-                                               separators=(',', ':')))
+            self._write_replay_json(json.dumps(tickinfo, cls=CustomEncoder, separators=(',', ':')))
 
             yield tick
 
         self._write_replay_json("]")
+
 
 print(opt)
 

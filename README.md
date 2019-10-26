@@ -21,35 +21,26 @@
 Dockerfile を参照してください.
 
 ## Installation
-image build
+対象ディレクトリで terminal を起動し, Makefile を使って Docker を起動する.  
+Image Name : elevator/dqn
+Working Dir : /var/www
 ```
-sudo docker build . -t elevator/dqn
-```
-
-run container by root to update poetry
-```
-sudo docker run -it -u root  -v $(pwd):/var/www  elevator/dqn bash
-```
-
-image rebuild
-```
-sudo docker build . -t elevator/dqn
-```
-
-just run!
-```
-sudo docker run -it -v $(pwd):/var/www   elevator/dqn bash
+[(base) user@~~:~~/DQNmeetsElevator$] make build run
 ```
 
 ## Usage
-実験結果を見るときは, viewer.html にクエリで投げる. (元記事では .gz で圧縮されたままのデータを投げているが, Ajax 周りで跳ね返されたので解凍してから投げる仕様に変更した.)
+実験を開始する際は, コンテナ内で run_iteration.sh　を起動する.
+```
+[root@~~:/var/www#] ./run_iteration.sh
+```
+
+また, 実験結果を見るときは viewer.html にクエリで投げる. (元記事では .gz で圧縮されたままのデータを投げているが, Ajax 周りで跳ね返されたので解凍してから投げる仕様に変更した.) なお, Chrome では実行できないため, Firefox などを使用してください.
 ```
 file:///home/usr/Documents/DQNmeetsElevator/viewer.html?/home/usr/Documents/DQNmeetsElevator/replay/1.json
 ```
 
 ## Author
-作成者 : VoyagerYoshida
-
+作成者 : VoyagerYoshida  
 e-mail : yoshida@ss.cs.osakafu-u.ac.jp
 
 ## License

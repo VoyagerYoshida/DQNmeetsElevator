@@ -1,11 +1,10 @@
-from lifcon import (
-    Move, Wait, next_int, prev_int, STATE_GOING_UP, STATE_GOING_DOWN, STATE_EMPTY
-)
-
+import numpy as np
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn
-import numpy as np
+
+from lifcon import Move, Wait, next_int, prev_int, STATE_GOING_UP, STATE_GOING_DOWN, STATE_EMPTY
+
 
 class Swish(gluon.HybridBlock):
     r"""
@@ -32,29 +31,19 @@ class Swish(gluon.HybridBlock):
     def hybrid_forward(self, F, x):
         return x * F.sigmoid(self._beta * x, name='fwd')
 
+
 class LiftControllerDQN(gluon.HybridBlock):
     def __init__(self, nlifts, nfloors, loc_denom, **kwargs):
         super(LiftControllerDQN, self).__init__(**kwargs)
 
-        self.nliftinfo = (
-            nfloors + # members
-            nfloors * loc_denom + # locations
-            3 + # move state (stop/up/down)
-            nlifts # liftid
-        )
-        self.nsideinfo = (
-            nfloors * 2 + # wait up/down flags
-            16 # tick in 16 bits
-        )
-
-        self.nactions = (
-            6
-        )
+        # nliftinfo = members + locations + move state (stop/up/down) + liftid
+        self.nliftinfo = nfloors + nfloors*loc_denom + 3 + nlifts
+        self.nsideinfo = nfloors*2 + 16  # nsideinfo = wait up/down flags + tick in 16 bits
+        self.nactions = 6
 
         self.nlifts = nlifts
         self.nfloors = nfloors
         self.loc_denom = loc_denom
-
 
         with self.name_scope():
             self.feats = nn.HybridSequential()
@@ -67,7 +56,6 @@ class LiftControllerDQN(gluon.HybridBlock):
 
             self.act_q = nn.Dense(self.nactions, flatten=False)
 
-
     def hybrid_forward(self, F, liftmat, sidevec):
         #sidevec: batchsize x nsideinfo
         #liftmat: batchsize x nlifts x nliftinfo
@@ -77,16 +65,13 @@ class LiftControllerDQN(gluon.HybridBlock):
         lift_emb = self.liftvec_embed(liftmat)
         side_emb = self.sidevec_embed(sidevec).reshape((-1, 1, 512)).tile(reps=(1, self.nlifts, 1))
 
-        hs = swish(lift_emb + side_emb) # First hidden layer
+        hs = swish(lift_emb + side_emb)  # First hidden layer
         # hs: batchsize x nlifts x 512
 
-        # selfvec: batchsize x nlifts x 512
-        selfvecs = self.self_trans(hs)
+        selfvecs = self.self_trans(hs)  # selfvec: batchsize x nlifts x 512
+        othervecs = self.other_trans(hs)  # compute max exclufing self row
+        othervecs = othervecs.split(num_outputs=self.nlifts, axis=1)  # othervecs: [batchsize x 1 x 512; nlifts]
 
-        othervecs = self.other_trans(hs)
-        # compute max exclufing self row
-        othervecs = othervecs.split(num_outputs=self.nlifts, axis=1)
-        # othervecs: [batchsize x 1 x 512; nlifts]
         l = []
         for lid in range(self.nlifts):
             all_other = [othervecs[i] for i in range(self.nlifts) if i != lid]
@@ -95,14 +80,9 @@ class LiftControllerDQN(gluon.HybridBlock):
             v = v.reshape((-1, 1, 512))
             l.append(v)
 
-        # othervecs: batchsize x nlifts x 512
-        othervecs = F.concat(*l, dim=1)
-
-        # last_h: batchsize x nlifts x 512
-        last_h = swish(selfvecs + othervecs)
-
-        # qs =: batchsize x nlifts x nactions
-        qs = self.act_q(last_h)
+        othervecs = F.concat(*l, dim=1)  # othervecs: batchsize x nlifts x 512
+        last_h = swish(selfvecs + othervecs)  # last_h: batchsize x nlifts x 512
+        qs = self.act_q(last_h)  # qs =: batchsize x nlifts x nactions
 
         return qs
 
@@ -125,8 +105,7 @@ class LiftControllerDQN(gluon.HybridBlock):
 
         sidevec = np.r_[side_wait_up, side_wait_down, side_tickvec]
 
-        # liftvecs
-        liftvecs = []
+        liftvecs = []  # liftvecs
 
         for lid in range(self.nlifts):
             members = np.zeros((self.nfloors,))
@@ -218,6 +197,7 @@ class LiftControllerDQN(gluon.HybridBlock):
 
         return goals, accept_sts
 
+
 class DQNController:
     def __init__(self, world, paramfile, epsilon, ctx=None):
         self.world = world
@@ -239,6 +219,6 @@ class DQNController:
         assert qs.shape[0] == 1
         assert qs.shape[1] == self.nlifts
 
-        acts = self.dqn.make_action(qs.asnumpy()[0],
-                                    status, self.epsilon)
+        acts = self.dqn.make_action(qs.asnumpy()[0], status, self.epsilon)
+
         return acts
