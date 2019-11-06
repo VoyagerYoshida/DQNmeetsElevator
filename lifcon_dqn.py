@@ -57,8 +57,8 @@ class LiftControllerDQN(gluon.HybridBlock):
             self.act_q = nn.Dense(self.nactions, flatten=False)
 
     def hybrid_forward(self, F, liftmat, sidevec):
-        #sidevec: batchsize x nsideinfo
-        #liftmat: batchsize x nlifts x nliftinfo
+        # sidevec: batchsize x nsideinfo
+        # liftmat: batchsize x nlifts x nliftinfo
 
         swish = Swish()
 
@@ -88,9 +88,9 @@ class LiftControllerDQN(gluon.HybridBlock):
 
     def encode_state(self, status, tick):
         # sidevec
-        side_wait_up = np.zeros((self.nfloors,))
-        side_wait_down = np.zeros((self.nfloors,))
-        side_tickvec = np.zeros((16,))
+        side_wait_up = np.zeros((self.nfloors, ))
+        side_wait_down = np.zeros((self.nfloors, ))
+        side_tickvec = np.zeros((16, ))
 
         for b in range(16):
             if tick % 2 > 0:
@@ -105,19 +105,18 @@ class LiftControllerDQN(gluon.HybridBlock):
 
         sidevec = np.r_[side_wait_up, side_wait_down, side_tickvec]
 
-        liftvecs = []  # liftvecs
-
+        # liftvecs
+        liftvecs = []
         for lid in range(self.nlifts):
-            members = np.zeros((self.nfloors,))
+            members = np.zeros((self.nfloors, ))
             for p in status.members[lid]:
                 members[p.dest_floor] = 1.0
 
-            locations = np.zeros((self.nfloors * self.loc_denom,))
+            locations = np.zeros((self.nfloors * self.loc_denom, ))
             loc_id = round(status.locations[lid] * self.loc_denom)
             locations[loc_id] = 1.0
 
             move = np.zeros((3,))
-
             j = 0
             if status.status[lid] == STATE_EMPTY:
                 j = 0
@@ -129,12 +128,12 @@ class LiftControllerDQN(gluon.HybridBlock):
                 assert False
             move[j] = 1.0
 
-            liftid = np.zeros((self.nlifts,))
+            liftid = np.zeros((self.nlifts, ))
             liftid[lid] = 1.0
-
             liftvecs.append(np.r_[members, locations, move, liftid])
 
         liftmat = np.array(liftvecs)
+
         return liftmat, sidevec
 
     def make_action_selector(self, status, goals, accept_sts):
@@ -155,9 +154,9 @@ class LiftControllerDQN(gluon.HybridBlock):
                 dir = "WAIT"
             else:
                 dest = goals[lid].dest
-                if dest > status.locations[lid]: # up
+                if dest > status.locations[lid]:  # up
                     dir = "UP"
-                elif dest < status.locations[lid]: # down
+                elif dest < status.locations[lid]:  # down
                     dir = "DOWN"
                 else:
                     dir = "WAIT"
@@ -188,9 +187,9 @@ class LiftControllerDQN(gluon.HybridBlock):
 
             if dir == "WAIT":
                 goals.append(Wait())
-            elif dir == "UP": # up
+            elif dir == "UP":  # up
                 goals.append(Move(dest=self.nfloors - 1))
-            elif dir == "DOWN": # down
+            elif dir == "DOWN":  # down
                 goals.append(Move(dest=0))
             else:
                 assert False

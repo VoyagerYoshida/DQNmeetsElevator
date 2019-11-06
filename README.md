@@ -22,7 +22,7 @@ Dockerfile を参照してください.
 
 ## Installation
 対象ディレクトリで terminal を起動し, Makefile を使って Docker を起動する.  
-Image Name : elevator/dqn
+Image Name : elevator/dqn  
 Working Dir : /var/www
 ```
 [(base) user@~~:~~/DQNmeetsElevator$] make build run

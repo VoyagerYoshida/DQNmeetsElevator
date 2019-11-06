@@ -187,17 +187,14 @@ class Simulator:
 
             # Let people out
             #  In-lift people can get off regardless of the lift accept policy,
-            #  Furthermore, when a lift is stopping, people can jump in regardless
-            #  of accept policy.
+            #  Furthermore, when a lift is stopping, people can jump in regardless of accept policy.
             rewards = []
             for lid in range(self.nlifts):
                 if self.locations[lid].denominator != 1:
                     continue
 
                 loc = self.locations[lid].numerator
-                exit_people = list(filter(
-                    lambda p: p.dest_floor == loc,
-                    self.people_in_lift[lid]))
+                exit_people = list(filter(lambda p: p.dest_floor == loc, self.people_in_lift[lid]))
 
                 if len(exit_people) == 0:
                     continue
@@ -226,7 +223,7 @@ class Simulator:
             logging.info("Ticks=%07d, total reward=%f, avg. reward=%f",
                          tick, current_reward, current_reward / (num_spawned + 0.001))
 
-            # Let people in
+            # Let people action_toin
             for lid in range(self.nlifts):
                 if self.locations[lid].denominator != 1:
                     continue

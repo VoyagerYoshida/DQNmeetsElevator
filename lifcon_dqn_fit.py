@@ -15,7 +15,6 @@ from mxnet import autograd
 from lifcon import World, make_person_from_jsval, ControllerStatus, Wait, Move
 from lifcon_dqn import LiftControllerDQN
 
-
 logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser()
@@ -40,6 +39,7 @@ world = World(world_conf)
 mx.random.seed(opt.seed)
 
 ctx = mx.cpu()
+# ctx = mx.gpu()
 
 dqn = LiftControllerDQN(world.nlifts, world.nfloors, world.lift_inv_speed)
 dqn_ref = LiftControllerDQN(world.nlifts, world.nfloors, world.lift_inv_speed)
@@ -66,7 +66,7 @@ for replayfile in replayfiles:
 
 logging.info("#Ticks=%d", len(replay) - 1)
 
-all_idxs = list(range(len(replay) - 1))
+all_idxs = list(range(len(replay)-1))
 
 loss = gluon.loss.L2Loss()
 
@@ -173,11 +173,11 @@ while True:
 
         nxt_Asel = mx.nd.array(nxt_Asel)
 
-        target = rewards + opt.gamma * mx.nd.sum(nxt_Q * nxt_Asel, axis=2).reshape((opt.batchsize, dqn.nlifts))
+        target = rewards + opt.gamma*mx.nd.sum(nxt_Q*nxt_Asel, axis=2).reshape((opt.batchsize, dqn.nlifts))
 
         with autograd.record():
             qs = dqn(mx.nd.array(cur_lift), mx.nd.array(cur_side))
-            qa_s = (cur_Asel * qs).sum(axis=2).reshape((opt.batchsize, dqn.nlifts))
+            qa_s = (cur_Asel*qs).sum(axis=2).reshape((opt.batchsize, dqn.nlifts))
 
             err = loss(qa_s, target)
 
@@ -198,6 +198,5 @@ while True:
         break
 
     nepoch += 1
-
     if nepoch >= opt.maxnepoch:
         break

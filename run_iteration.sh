@@ -1,5 +1,12 @@
-#SIMULATOR_OPTS=(--limittick 1000)
-SIMULATOR_OPTS=(--random-ticks 3000)
+# SIMULATOR_OPTS=(--limittick 1000)
+# SIMULATOR_OPTS=(--random-ticks 3000)
+SIMULATOR_OPTS=(--starttick 0 --limittick  3000)
+# SIMULATOR_OPTS=(--starttick 10800 --limittick 3000)
+# SIMULATOR_OPTS=(--starttick 46800 --limittick 3000)
+# SIMULATOR_OPTS=(--starttick 18000 --limittick 3000)
+
+# DQN_TYPE=()
+DQN_TYPE=(--double-dqn)
 
 GAMMA=0.99
 TOLERANCE=0.1
@@ -9,10 +16,15 @@ NTICK=3000
 EPSILON=0.99
 NHIST=10
 
+RF_INITFILE="./lifcon_dqn_init.py"
+RF_FITFILE="./lifcon_dqn_fit.py"
+
+STARTTIME=`date "+%Y-%m-%d %H:%M:%S"`
+
 set -eux
 
 if true ; then
-    python3 ./lifcon_dqn_init.py --world ./lifcon.real.yaml --saveparam ./nets/dqn.0
+    python3 ${RF_INITFILE} --world ./lifcon.real.yaml --saveparam ./nets/dqn.0
     echo -n > replay/filelist.txt
 
     for iter in 1 2 3 4 5 6 7 8 9 10
@@ -25,7 +37,7 @@ if true ; then
         tail -n ${NHIST} replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter} --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH} --double-dqn 2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter} --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH} ${DQN_TYPE[@]} 2>&1 | tee log/${iter}.fit.log
     done
 fi
 
@@ -43,7 +55,7 @@ if true ; then
         tail -n ${NHIST} replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH} --double-dqn  2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH} ${DQN_TYPE[@]}  2>&1 | tee log/${iter}.fit.log
     done
 fi
 
@@ -61,7 +73,7 @@ if true ; then
         tail -n ${NHIST} replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} --double-dqn  2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} ${DQN_TYPE[@]}  2>&1 | tee log/${iter}.fit.log
     done
 fi
 
@@ -79,7 +91,7 @@ if true ; then
         tail -n 5 replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH}  --double-dqn  2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH}  ${DQN_TYPE[@]}  2>&1 | tee log/${iter}.fit.log
     done
 fi
 
@@ -97,7 +109,7 @@ if true ; then
         tail -n ${NHIST} replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH}  --double-dqn  2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA} --maxnepoch ${MAXEPOCH}  ${DQN_TYPE[@]}  2>&1 | tee log/${iter}.fit.log
     done
 fi
 
@@ -115,7 +127,7 @@ if true ; then
         tail -n ${NHIST} replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} --double-dqn  2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} ${DQN_TYPE[@]}  2>&1 | tee log/${iter}.fit.log
     done
 fi
 
@@ -130,7 +142,7 @@ if true ; then
         tail -n ${NHIST} replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} --double-dqn  2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} ${DQN_TYPE[@]}  2>&1 | tee log/${iter}.fit.log
     done
 fi
 
@@ -148,6 +160,11 @@ if true ; then
         tail -n ${NHIST} replay/filelist.txt > replay/filelist.txt.new
         mv replay/filelist.txt.new replay/filelist.txt
 
-        python3 ./lifcon_dqn_fit.py --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} --double-dqn  --lr ${LR} 2>&1 | tee log/${iter}.fit.log
+        python3 ${RF_FITFILE} --world ./lifcon.real.yaml --loadparam nets/dqn.${prev} --saveparam nets/dqn.${iter}  --replaylist ./replay/filelist.txt  --tolerance ${TOLERANCE} --seed ${iter} --gamma ${GAMMA}  --maxnepoch ${MAXEPOCH} ${DQN_TYPE[@]}  --lr ${LR} 2>&1 | tee log/${iter}.fit.log
     done
 fi
+
+echo start ${STARTTIME}
+
+FINISHTIME=`date "+%Y-%m-%d %H:%M:%S"`
+echo finish ${FINISHTIME}
